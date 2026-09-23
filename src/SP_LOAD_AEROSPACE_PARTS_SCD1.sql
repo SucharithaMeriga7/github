@@ -9,7 +9,7 @@
 -- ============================================================
 
 CREATE OR REPLACE PROCEDURE SP_LOAD_AEROSPACE_PARTS_SCD1(
-    P_MODE VARCHAR DEFAULT 'INCREMENTAL'
+    P_MODE VARCHAR
 )
 RETURNS VARCHAR
 LANGUAGE SQL
