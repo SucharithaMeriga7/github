@@ -1,16 +1,16 @@
 -- ============================================================
 -- Object Name : SP_LOAD_AEROSPACE_PARTS_SCD1
 -- Purpose     : SCD Type 1 ETL pipeline — AEROSPACE_PARTS_SOURCE to AEROSPACE_PARTS_TARGET
---               Supports incremental and full load modes with deduplication,
---               transformation rules, RISK_SCORE derivation, SCD1 MERGE,
---               soft delete for decommissioned records, and mandatory ETL
---               reconciliation logging per run
+--               Auto-determines load mode: FULL on first run (no prior watermark),
+--               INCREMENTAL on subsequent runs using MAX(UPDATED_AT) watermark.
+--               Includes deduplication, transformation, RISK_SCORE derivation,
+--               SCD1 MERGE, soft delete, and mandatory ETL reconciliation logging.
 -- Author      : SUCHARITHAS
 -- Generated   : 2026-09-23
 -- ============================================================
 
 CREATE OR REPLACE PROCEDURE SP_LOAD_AEROSPACE_PARTS_SCD1(
-    P_MODE VARCHAR DEFAULT 'INCREMENTAL'
+    P_MODE VARCHAR
 )
 RETURNS VARCHAR
 LANGUAGE SQL
@@ -122,9 +122,9 @@ BEGIN
     CREATE OR REPLACE TEMPORARY TABLE TMP_AERO_STAGED AS
     SELECT
         PART_NUMBER,
-        UPPER(MANUFACTURER)                                                                    AS MANUFACTURER,
-        CASE WHEN WEIGHT_KG <= 0 THEN NULL ELSE WEIGHT_KG END                                 AS WEIGHT_KG,
-        ROUND(UNIT_PRICE_USD, 2)                                                               AS UNIT_PRICE_USD,
+        UPPER(MANUFACTURER)                                                              AS MANUFACTURER,
+        CASE WHEN WEIGHT_KG <= 0 THEN NULL ELSE WEIGHT_KG END                           AS WEIGHT_KG,
+        ROUND(UNIT_PRICE_USD, 2)                                                         AS UNIT_PRICE_USD,
         LIFECYCLE_STATUS,
         INSTALLATION_DATE,
         UPDATED_AT,
@@ -138,10 +138,10 @@ BEGIN
             WHEN CERTIFICATION_STATUS IN ('FAA', 'EASA', 'Dual') AND LEAD_TIME_DAYS <= 60
                 THEN 'Low Risk'
             ELSE 'Medium Risk'
-        END                                                                                    AS RISK_SCORE,
-        'Active'                                                                                AS RECORD_STATUS,
-        TRUE                                                                                    AS IS_ACTIVE,
-        CURRENT_TIMESTAMP()                                                                     AS ETL_LOAD_TIMESTAMP
+        END                                                                              AS RISK_SCORE,
+        'Active'                                                                          AS RECORD_STATUS,
+        TRUE                                                                              AS IS_ACTIVE,
+        CURRENT_TIMESTAMP()                                                               AS ETL_LOAD_TIMESTAMP
     FROM TMP_AERO_FILTERED;
 
     -- --------------------------------------------------------
