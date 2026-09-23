@@ -1,0 +1,5 @@
+create or replace task TASK_LOAD_AEROSPACE_PARTS
+	warehouse=SNOWFLAKE_LEARNING_WH
+	schedule='USING CRON 0 2 * * * UTC'
+	COMMENT='Scheduled task - Daily at 02:00 UTC'
+	as CALL IDEA_2_DB.PUBLIC.LOAD_AEROSPACE_PARTS('INCREMENTAL');
